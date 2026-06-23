@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 import struct
 import zlib
 
@@ -352,6 +351,7 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
     
     chart_col1, chart_col2 = st.columns([2, 1])
     
+    # 10. 시간 영역 그래프 영역 (스트림릿 내장 고성능 st.line_chart 대체)
     with chart_col1:
         st.markdown(f"#### <i class='fa-solid fa-wave-square' style='color:#4f46e5;'></i> 시간 영역 파형 비교 ({st.session_state['normal_filename']} vs {st.session_state['anomaly_filename']})", unsafe_allow_html=True)
         limit_options = [500, 1000, 2000, 5000]
@@ -360,32 +360,19 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
         sliced_n = n_data[:sample_limit]
         sliced_a = a_data[:sample_limit]
         
-        fig_time = go.Figure()
-        fig_time.add_trace(go.Scatter(
-            y=sliced_n, name=f"정상 ({st.session_state['normal_filename']})",
-            line=dict(color="#10b981", width=1.5)
-        ))
-        fig_time.add_trace(go.Scatter(
-            y=sliced_a, name=f"이상 ({st.session_state['anomaly_filename']})",
-            line=dict(color="#f43f5e", width=1.5)
-        ))
-        
-        fig_time.update_layout(
-            plot_bgcolor="#f8fafc",
-            paper_bgcolor="#ffffff",
-            margin=dict(l=40, r=20, t=10, b=30),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-            xaxis=dict(title="샘플 인덱스 (n)", gridcolor="#e2e8f0"),
-            yaxis=dict(title="진폭 (Amplitude)", gridcolor="#e2e8f0"),
-            height=340
-        )
-        st.plotly_chart(fig_time, use_container_width=True)
+        # Pandas DataFrame 생성 및 선그리기 구현
+        df_time_chart = pd.DataFrame({
+            f"정상 ({st.session_state['normal_filename']})": sliced_n,
+            f"이상 ({st.session_state['anomaly_filename']})": sliced_a
+        })
+        st.line_chart(df_time_chart, height=340, color=["#10b981", "#f43f5e"])
 
+    # 11. 레이더 대안 - 가독성이 뛰어난 다차원 패턴 비교 대칭 막대 그래프 영역 (st.bar_chart 대체)
     with chart_col2:
-        st.markdown("#### <i class='fa-solid fa-circle-notch' style='color:#4f46e5;'></i> 다차원 패턴 레이더 분석", unsafe_allow_html=True)
-        st.markdown("<p style='font-size:0.75rem; color:#94a3b8; margin-top:-5px;'>각 통계 지표는 정상 신호 기준 비율로 상대 정규화</p>", unsafe_allow_html=True)
+        st.markdown("#### <i class='fa-solid fa-chart-bar' style='color:#4f46e5;'></i> 다차원 패턴 특징 분석 (배율)", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.75rem; color:#94a3b8; margin-top:-5px;'>각 통계 지표는 정상 신호 기준(=1.0)으로 상대 정규화</p>", unsafe_allow_html=True)
         
-        radar_categories = ['실효치(RMS)', '피크폭(P2P)', '첨도(Kurt)', '표준편차(Std)', '크레스트팩터(CF)']
+        categories = ['실효치(RMS)', '피크폭(P2P)', '첨도(Kurt)', '표준편차(Std)', '크레스트팩터(CF)']
         norm_n = [1.0] * 5
         norm_a = [
             feat_a["rms"] / feat_n["rms"] if feat_n["rms"] > 0 else 1.0,
@@ -395,53 +382,27 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
             feat_a["cf"] / feat_n["cf"] if feat_n["cf"] > 0 else 1.0
         ]
         
-        fig_radar = go.Figure()
-        fig_radar.add_trace(go.Scatterpolar(
-            r=norm_n, theta=radar_categories, fill='toself',
-            name="정상 데이터", line_color="#10b981", fillcolor="rgba(16, 185, 129, 0.1)"
-        ))
-        fig_radar.add_trace(go.Scatterpolar(
-            r=norm_a, theta=radar_categories, fill='toself',
-            name="이상 데이터", line_color="#f43f5e", fillcolor="rgba(244, 63, 94, 0.1)"
-        ))
+        # 사이드 바이 사이드 막대 데이터프레임 구조화
+        df_pattern_chart = pd.DataFrame({
+            "정상": norm_n,
+            "이상": norm_a
+        }, index=categories)
         
-        fig_radar.update_layout(
-            polar=dict(
-                radialaxis=dict(visible=True, showticklabels=False, gridcolor="#e2e8f0"),
-                angularaxis=dict(gridcolor="#e2e8f0")
-            ),
-            paper_bgcolor="#ffffff",
-            margin=dict(l=40, r=40, t=30, b=30),
-            legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5),
-            height=340
-        )
-        st.plotly_chart(fig_radar, use_container_width=True)
+        st.bar_chart(df_pattern_chart, height=340, color=["#10b981", "#f43f5e"])
 
+    # 12. 주파수 영역 (FFT) 영역 누적 그래프 (스트림릿 내장 고성능 st.area_chart 대체)
     st.markdown("#### <i class='fa-solid fa-bolt' style='color:#eab308;'></i> 고속 푸리에 변환 주파수 스펙트럼 (FFT Spectrum)", unsafe_allow_html=True)
     
     freqs_n, mags_n = compute_fft(n_data)
     freqs_a, mags_a = compute_fft(a_data)
     
-    fig_fft = go.Figure()
-    fig_fft.add_trace(go.Scatter(
-        x=freqs_n, y=mags_n, name=f"정상 ({st.session_state['normal_filename']})",
-        line=dict(color="#10b981", width=1.5), fill='tozeroy', fillcolor="rgba(16, 185, 129, 0.04)"
-    ))
-    fig_fft.add_trace(go.Scatter(
-        x=freqs_a, y=mags_a, name=f"이상 ({st.session_state['anomaly_filename']})",
-        line=dict(color="#f43f5e", width=1.5), fill='tozeroy', fillcolor="rgba(244, 63, 94, 0.04)"
-    ))
+    # x축 눈금 매핑을 위해 인덱스를 Hertz 단위 정수로 세팅
+    df_fft_chart = pd.DataFrame({
+        f"정상 ({st.session_state['normal_filename']})": mags_n,
+        f"이상 ({st.session_state['anomaly_filename']})": mags_a
+    }, index=np.round(freqs_n).astype(int))
     
-    fig_fft.update_layout(
-        plot_bgcolor="#f8fafc",
-        paper_bgcolor="#ffffff",
-        margin=dict(l=40, r=20, t=10, b=30),
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
-        xaxis=dict(title="주파수 (Frequency, Hz)", gridcolor="#e2e8f0"),
-        yaxis=dict(title="가속도/신호 강도 (Magnitude)", gridcolor="#e2e8f0"),
-        height=320
-    )
-    st.plotly_chart(fig_fft, use_container_width=True)
+    st.area_chart(df_fft_chart, height=320, color=["#10b981", "#f43f5e"])
 
 else:
     st.markdown("---")
