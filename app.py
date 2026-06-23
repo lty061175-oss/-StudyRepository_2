@@ -52,7 +52,17 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. 순수 NumPy 기반 통계 피처 추출 함수 정의 (scipy 의존성 제거)
+# 2. 전역 통계 지표 정보 정의
+kpis = [
+    ("실효값 (RMS)", "rms", "전체 진동 에너지 수준"),
+    ("최대-최소 폭 (P2P)", "p2p", "최대 충격 정도"),
+    ("첨도 (Kurtosis)", "kurt", "충격성 신호 유무 (정상 ~3)"),
+    ("평균값 (Mean)", "mean", "센서 오프셋/편향 정도"),
+    ("표준편차 (Std Dev)", "std", "신호의 분산/변동폭"),
+    ("크레스트 팩터 (CF)", "cf", "피크치 대 실효치 비율")
+]
+
+# 3. 순수 NumPy 기반 통계 피처 추출 함수 정의 (scipy 의존성 제거)
 def extract_features(signal):
     if signal is None or len(signal) == 0:
         return {"mean": 0, "rms": 0, "std": 0, "p2p": 0, "kurt": 3.0, "cf": 0}
@@ -82,7 +92,7 @@ def extract_features(signal):
         "cf": round(cf_val, 5)
     }
 
-# 3. FFT 연산 함수 정의
+# 4. FFT 연산 함수 정의
 def compute_fft(signal, fs=12000, n_fft=512):
     truncated = signal[:n_fft]
     yf = np.fft.fft(truncated)
@@ -90,7 +100,7 @@ def compute_fft(signal, fs=12000, n_fft=512):
     freqs = np.fft.fftfreq(n_fft, 1 / fs)[:n_fft // 2]
     return freqs, mags
 
-# 4. 순수 파이썬 기반 MATLAB .mat v5 파일 바이너리 고성능 파서 (scipy.io 대체)
+# 5. 순수 파이썬 기반 MATLAB .mat v5 파일 바이너리 고성능 파서 (scipy.io 대체)
 def parse_mat_file_pure_python(uploaded_file):
     try:
         uploaded_file.seek(0)
@@ -200,7 +210,7 @@ def parse_mat_file_pure_python(uploaded_file):
         st.error(f"MAT 파일 파싱 에러: {str(e)}")
         return None, None
 
-# 5. 데모 데이터 생성 핸들러
+# 6. 데모 데이터 생성 핸들러
 def generate_demo_data(is_anomaly=False, fs=12000, length=12000):
     t = np.arange(length) / fs
     if not is_anomaly:
@@ -222,7 +232,7 @@ if "anomaly_data" not in st.session_state:
     st.session_state["anomaly_var"] = "N/A"
     st.session_state["last_processed_anomaly"] = None
 
-# 6. 헤더 영역 구축
+# 7. 헤더 영역 구축
 st.markdown("""
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
         <div style="background-color: #4f46e5; padding: 10px; border-radius: 12px; color: white; display: flex; align-items: center; justify-content: center;">
@@ -236,7 +246,7 @@ st.markdown("""
     <hr style="margin-top: 10px; margin-bottom: 20px; border-color: #e2e8f0;">
 """, unsafe_allow_html=True)
 
-# 7. 안내 가이드 및 데모 활성화 영역
+# 8. 안내 가이드 및 데모 활성화 영역
 guide_col, demo_col = st.columns([3, 1])
 with guide_col:
     st.markdown("""
@@ -257,7 +267,7 @@ with demo_col:
         st.session_state["last_processed_anomaly"] = "Demo_Fault_Bearing_320Hz.mat"
         st.success("데모 데이터가 성공적으로 탑재되었습니다!")
 
-# 8. 파일 업로더 레이아웃 구성 및 실시간 동기화 플레이스홀더 연동
+# 9. 파일 업로더 레이아웃 구성 및 실시간 동기화 플레이스홀더 연동
 up_col1, up_col2 = st.columns(2)
 
 with up_col1:
@@ -310,7 +320,7 @@ with up_col2:
     if st.session_state["anomaly_data"] is not None:
         st.info(f"✔️ {st.session_state['anomaly_filename']} 로드 완료 (변수명: {st.session_state['anomaly_var']}, 크기: {len(st.session_state['anomaly_data']):,}샘플)")
 
-# 9. 분석 수행 및 대시보드 시각화
+# 10. 분석 수행 및 대시보드 시각화
 if st.session_state["normal_data"] is not None and st.session_state["anomaly_data"] is not None:
     
     n_data = st.session_state["normal_data"]
@@ -322,15 +332,6 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
     st.markdown("### <i class='fa-solid fa-calculator' style='color:#4f46e5;'></i> 시계열 대표 특징 통계 (Feature Summary)", unsafe_allow_html=True)
     
     kpi_cols = st.columns(6)
-    
-    kpis = [
-        ("실효값 (RMS)", "rms", "전체 진동 에너지 수준"),
-        ("최대-최소 폭 (P2P)", "p2p", "최대 충격 정도"),
-        ("첨도 (Kurtosis)", "kurt", "충격성 신호 유무 (정상 ~3)"),
-        ("평균값 (Mean)", "mean", "센서 오프셋/편향 정도"),
-        ("표준편차 (Std Dev)", "std", "신호의 분산/변동폭"),
-        ("크레스트 팩터 (CF)", "cf", "피크치 대 실효치 비율")
-    ]
     
     for idx, (title, key, desc) in enumerate(kpis):
         with kpi_cols[idx]:
@@ -351,7 +352,7 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
     
     chart_col1, chart_col2 = st.columns([2, 1])
     
-    # 10. 시간 영역 그래프 영역 (스트림릿 내장 고성능 st.line_chart 대체)
+    # 시간 영역 그래프 영역 (스트림릿 내장 고성능 st.line_chart 대체)
     with chart_col1:
         st.markdown(f"#### <i class='fa-solid fa-wave-square' style='color:#4f46e5;'></i> 시간 영역 파형 비교 ({st.session_state['normal_filename']} vs {st.session_state['anomaly_filename']})", unsafe_allow_html=True)
         limit_options = [500, 1000, 2000, 5000]
@@ -367,7 +368,7 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
         })
         st.line_chart(df_time_chart, height=340, color=["#10b981", "#f43f5e"])
 
-    # 11. 레이더 대안 - 가독성이 뛰어난 다차원 패턴 비교 대칭 막대 그래프 영역 (st.bar_chart 대체)
+    # 다차원 패턴 비교 대칭 막대 그래프 영역 (st.bar_chart 대체)
     with chart_col2:
         st.markdown("#### <i class='fa-solid fa-chart-bar' style='color:#4f46e5;'></i> 다차원 패턴 특징 분석 (배율)", unsafe_allow_html=True)
         st.markdown("<p style='font-size:0.75rem; color:#94a3b8; margin-top:-5px;'>각 통계 지표는 정상 신호 기준(=1.0)으로 상대 정규화</p>", unsafe_allow_html=True)
@@ -390,7 +391,7 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
         
         st.bar_chart(df_pattern_chart, height=340, color=["#10b981", "#f43f5e"])
 
-    # 12. 주파수 영역 (FFT) 영역 누적 그래프 (스트림릿 내장 고성능 st.area_chart 대체)
+    # 주파수 영역 (FFT) 영역 누적 그래프 (스트림릿 내장 고성능 st.area_chart 대체)
     st.markdown("#### <i class='fa-solid fa-bolt' style='color:#eab308;'></i> 고속 푸리에 변환 주파수 스펙트럼 (FFT Spectrum)", unsafe_allow_html=True)
     
     freqs_n, mags_n = compute_fft(n_data)
@@ -408,7 +409,20 @@ else:
     st.markdown("---")
     st.info("💡 분석할 정상 데이터와 이상 데이터 파일을 업로드하거나, 우측 상단의 '데모 데이터로 즉시 테스트' 버튼을 클릭하면 대시보드 전체 시각화 및 피처 분석이 부드럽게 펼쳐집니다.")
     
+    # 초기 대기 모드에서 빈 수치로 구성된 미려한 투명 스켈레톤 카드 렌더링
+    st.markdown("### <i class='fa-solid fa-calculator' style='color:#cbd5e1;'></i> 대표 특징 통계 (대기 중)", unsafe_allow_html=True)
     kpi_cols = st.columns(6)
-    for title, _, desc in kpis:
-        with kpi_cols[0]:
-            pass
+    for idx, (title, _, desc) in enumerate(kpis):
+        with kpi_cols[idx]:
+            st.markdown(f"""
+                <div class="metric-card" style="opacity: 0.55; border-style: dashed;">
+                    <div class="metric-title">{title}</div>
+                    <div style="margin-top: 8px;">
+                        <span style="color:#94a3b8; font-size:0.8rem;">N:</span> <span class="metric-value-n" style="color:#94a3b8;">-</span>
+                    </div>
+                    <div>
+                        <span style="color:#94a3b8; font-size:0.8rem;">A:</span> <span class="metric-value-a" style="color:#94a3b8;">-</span>
+                    </div>
+                    <div class="metric-desc">{desc}</div>
+                </div>
+            """, unsafe_allow_html=True)
