@@ -89,6 +89,8 @@ def compute_fft(signal, fs=12000, n_fft=512):
 # 4. MATLAB .mat 바이너리 파서 정의
 def parse_mat_file(uploaded_file):
     try:
+        # 파일 포인터를 처음으로 되돌려 완벽한 데이터를 읽어오도록 방어 코딩 추가
+        uploaded_file.seek(0)
         # scipy.io.loadmat를 사용하여 압축/비압축 매트랩 파일을 통합 파싱
         mat_data = scipy.io.loadmat(uploaded_file)
         # 메타데이터를 제외한 실제 데이터 키 필터링
@@ -172,60 +174,66 @@ with demo_col:
         st.session_state["last_processed_anomaly"] = "Demo_Fault_Bearing_320Hz.mat"
         st.success("데모 데이터가 성공적으로 탑재되었습니다!")
 
-# ==========================================
-# [중요] 최상단 선제적 상태 동기화 처리 영역
-# ==========================================
-# 정상 데이터 파일 처리
-file_normal_raw = st.session_state.get("uploader_normal")
-if file_normal_raw is not None:
-    if st.session_state.get("last_processed_normal") != file_normal_raw.name:
-        var_name, data_arr = parse_mat_file(file_normal_raw)
-        if data_arr is not None:
-            st.session_state["normal_data"] = data_arr
-            st.session_state["normal_filename"] = file_normal_raw.name
-            st.session_state["normal_var"] = var_name
-            st.session_state["last_processed_normal"] = file_normal_raw.name
-else:
-    # 파일이 제거되었고 데모 상태도 아니라면 상태를 초기값으로 복원
-    last_normal = st.session_state.get("last_processed_normal")
-    if last_normal is not None and not last_normal.startswith("Demo_"):
-        st.session_state["normal_data"] = None
-        st.session_state["normal_filename"] = "Normal.mat"
-        st.session_state["normal_var"] = "N/A"
-        st.session_state["last_processed_normal"] = None
-
-# 이상 데이터 파일 처리
-file_anomaly_raw = st.session_state.get("uploader_anomaly")
-if file_anomaly_raw is not None:
-    if st.session_state.get("last_processed_anomaly") != file_anomaly_raw.name:
-        var_name, data_arr = parse_mat_file(file_anomaly_raw)
-        if data_arr is not None:
-            st.session_state["anomaly_data"] = data_arr
-            st.session_state["anomaly_filename"] = file_anomaly_raw.name
-            st.session_state["anomaly_var"] = var_name
-            st.session_state["last_processed_anomaly"] = file_anomaly_raw.name
-else:
-    # 파일이 제거되었고 데모 상태도 아니라면 상태를 초기값으로 복원
-    last_anomaly = st.session_state.get("last_processed_anomaly")
-    if last_anomaly is not None and not last_anomaly.startswith("Demo_"):
-        st.session_state["anomaly_data"] = None
-        st.session_state["anomaly_filename"] = "B.mat"
-        st.session_state["anomaly_var"] = "N/A"
-        st.session_state["last_processed_anomaly"] = None
-# ==========================================
-
-# 8. 파일 업로더 레이아웃 구성
+# 8. 파일 업로더 레이아웃 구성 및 실시간 동기화 플레이스홀더 연동
 up_col1, up_col2 = st.columns(2)
 
 with up_col1:
-    st.markdown(f"#### Class 1: 정상 데이터 (<span style='color:#10b981;'>{st.session_state['normal_filename']}</span>)", unsafe_allow_html=True)
-    st.file_uploader("Normal.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_normal")
+    # 빈 공간(Placeholder) 확보하여 파일명 동적 변환 위치 지정
+    header_normal_placeholder = st.empty()
+    file_normal = st.file_uploader("Normal.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_normal")
+    
+    # 정상 데이터 업로드 상태 실시간 갱신 처리
+    if file_normal is not None:
+        file_normal.seek(0)
+        if st.session_state.get("last_processed_normal") != file_normal.name:
+            var_name, data_arr = parse_mat_file(file_normal)
+            if data_arr is not None:
+                st.session_state["normal_data"] = data_arr
+                st.session_state["normal_filename"] = file_normal.name
+                st.session_state["normal_var"] = var_name
+                st.session_state["last_processed_normal"] = file_normal.name
+    else:
+        # 파일이 제거되었고 가상 데모 상태가 아닐 때 롤백
+        last_normal = st.session_state.get("last_processed_normal")
+        if last_normal is not None and not last_normal.startswith("Demo_"):
+            st.session_state["normal_data"] = None
+            st.session_state["normal_filename"] = "Normal.mat"
+            st.session_state["normal_var"] = "N/A"
+            st.session_state["last_processed_normal"] = None
+            
+    # 예약 공간에 동적으로 정상 파일 상태 기록
+    header_normal_placeholder.markdown(f"#### Class 1: 정상 데이터 (<span style='color:#10b981;'>{st.session_state['normal_filename']}</span>)", unsafe_allow_html=True)
+    
     if st.session_state["normal_data"] is not None:
         st.info(f"✔️ {st.session_state['normal_filename']} 로드 완료 (변수명: {st.session_state['normal_var']}, 크기: {len(st.session_state['normal_data']):,}샘플)")
 
 with up_col2:
-    st.markdown(f"#### Class 2: 이상 데이터 (<span style='color:#f43f5e;'>{st.session_state['anomaly_filename']}</span>)", unsafe_allow_html=True)
-    st.file_uploader("B.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_anomaly")
+    # 빈 공간(Placeholder) 확보하여 파일명 동적 변환 위치 지정
+    header_anomaly_placeholder = st.empty()
+    file_anomaly = st.file_uploader("B.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_anomaly")
+    
+    # 이상 데이터 업로드 상태 실시간 갱신 처리
+    if file_anomaly is not None:
+        file_anomaly.seek(0)
+        if st.session_state.get("last_processed_anomaly") != file_anomaly.name:
+            var_name, data_arr = parse_mat_file(file_anomaly)
+            if data_arr is not None:
+                st.session_state["anomaly_data"] = data_arr
+                st.session_state["anomaly_filename"] = file_anomaly.name
+                st.session_state["anomaly_var"] = var_name
+                st.session_state["last_processed_anomaly"] = file_anomaly.name
+    else:
+        # 파일이 제거되었고 가상 데모 상태가 아닐 때 롤백
+        last_anomaly = st.session_state.get("last_processed_anomaly")
+        if last_anomaly is not None and not last_anomaly.startswith("Demo_"):
+            st.session_state["anomaly_data"] = None
+            st.session_state["anomaly_filename"] = "B.mat"
+            st.session_state["anomaly_var"] = "N/A"
+            st.session_state["last_processed_anomaly"] = None
+
+    # 예약 공간에 동적으로 이상 파일 상태 기록 (드래그 드롭 즉시 갱신 보장)
+    header_anomaly_placeholder.markdown(f"#### Class 2: 이상 데이터 (<span style='color:#f43f5e;'>{st.session_state['anomaly_filename']}</span>)", unsafe_allow_html=True)
+    
     if st.session_state["anomaly_data"] is not None:
         st.info(f"✔️ {st.session_state['anomaly_filename']} 로드 완료 (변수명: {st.session_state['anomaly_var']}, 크기: {len(st.session_state['anomaly_data']):,}샘플)")
 
