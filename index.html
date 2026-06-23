@@ -14,40 +14,40 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #0f172a;
+      background-color: #f8fafc;
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
       height: 6px;
     }
     .custom-scrollbar::-webkit-scrollbar-track {
-      background: #1e293b;
+      background: #f1f5f9;
     }
     .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #475569;
+      background: #cbd5e1;
       border-radius: 3px;
     }
   </style>
 </head>
-<body class="text-slate-100 min-h-screen flex flex-col">
+<body class="text-slate-800 min-h-screen flex flex-col">
 
   <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+  <header class="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-50 px-6 py-4 shadow-sm">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
         <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20 text-white">
           <i class="fa-solid fa-chart-line text-xl"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r bg-clip-text text-transparent from-indigo-400 to-cyan-400">
+          <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r bg-clip-text text-transparent from-indigo-600 to-cyan-600">
             신호 특징 분석 대시보드
           </h1>
-          <p class="text-xs text-slate-400">MATLAB (.mat) 정상 및 이상 파일 특징 비교 시각화</p>
+          <p class="text-xs text-slate-500">MATLAB (.mat) 정상 및 이상 파일 특징 비교 시각화</p>
         </div>
       </div>
       <div class="flex items-center gap-2 text-sm">
-        <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs border border-emerald-500/20 flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-xs border border-emerald-200 flex items-center gap-1.5 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
           실시간 로컬 분석 모드
         </span>
       </div>
@@ -57,23 +57,23 @@
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 space-y-6">
     
     <!-- 소개 및 가이드 -->
-    <div class="bg-gradient-to-r from-slate-900 to-indigo-950 border border-indigo-500/20 rounded-2xl p-6 shadow-xl">
+    <div class="bg-gradient-to-r from-white via-slate-50 to-indigo-50/30 border border-indigo-100 rounded-2xl p-6 shadow-sm">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div class="space-y-2 max-w-2xl">
-          <h2 class="text-lg font-semibold text-white flex items-center gap-2">
-            <i class="fa-solid fa-circle-info text-indigo-400"></i> 분석 시작 가이드
+          <h2 class="text-lg font-semibold text-slate-900 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-indigo-500"></i> 분석 시작 가이드
           </h2>
-          <p class="text-sm text-slate-300 leading-relaxed">
-            이 대시보드는 업로드하신 진동 데이터 등의 MATLAB 포맷(<code class="text-indigo-300 font-mono bg-slate-900/60 px-1 py-0.5 rounded">.mat</code>) 정상 데이터(<span class="text-emerald-400 font-semibold">Normal.mat</span>)와 이상 데이터(<span class="text-rose-400 font-semibold">B.mat</span>)를 직접 읽어 들여 시간 영역 통계치와 FFT(고속 푸리에 변환)를 통한 주파수 스펙트럼 특징을 계산하고 비교합니다.
+          <p class="text-sm text-slate-600 leading-relaxed">
+            이 대시보드는 업로드하신 진동 데이터 등의 MATLAB 포맷(<code class="text-indigo-600 font-mono bg-indigo-50 px-1.5 py-0.5 rounded">.mat</code>) 정상 데이터(<span class="text-emerald-600 font-semibold">Normal.mat</span>)와 이상 데이터(<span class="text-rose-600 font-semibold">B.mat</span>)를 직접 읽어 들여 시간 영역 통계치와 FFT(고속 푸리에 변환)를 통한 주파수 스펙트럼 특징을 계산하고 비교합니다.
           </p>
           <p class="text-xs text-slate-400">
             * 모든 연산은 웹 브라우저 내에서 직접 수행되며, 서버로 데이터가 절대 전송되지 않습니다.
           </p>
         </div>
         
-        <!-- 미리보기 샘플 생성 버튼 및 파일 인풋 -->
+        <!-- 미리보기 샘플 생성 버튼 -->
         <div class="flex flex-col sm:flex-row gap-3 self-center md:self-auto">
-          <button id="btn-load-demo" class="px-4 py-2.5 bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 font-medium text-sm rounded-xl border border-indigo-500/30 transition flex items-center justify-center gap-2">
+          <button id="btn-load-demo" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-xl shadow-md shadow-indigo-500/10 transition flex items-center justify-center gap-2">
             <i class="fa-solid fa-wand-magic-sparkles"></i> 데모 데이터로 즉시 테스트
           </button>
         </div>
@@ -84,58 +84,58 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       
       <!-- 정상 데이터 업로드 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-emerald-500/30 transition-all shadow-md group relative overflow-hidden">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-emerald-400 transition-all shadow-sm group relative overflow-hidden">
         <div class="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
         <div class="flex justify-between items-start mb-4">
           <div class="space-y-1">
-            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Class 1</span>
-            <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Class 1</span>
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
               정상 데이터 (Normal.mat)
             </h3>
           </div>
-          <div id="status-normal" class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400 font-mono">
+          <div id="status-normal" class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-500 font-mono">
             파일 대기 중
           </div>
         </div>
         
         <!-- 드래그 드롭 존 -->
-        <div class="border-2 border-dashed border-slate-800 group-hover:border-slate-700 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-800/20 transition relative" onclick="document.getElementById('input-normal').click()">
+        <div id="dropzone-normal" class="border-2 border-dashed border-slate-200 group-hover:border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-50/50 transition relative" onclick="document.getElementById('input-normal').click()">
           <input type="file" id="input-normal" accept=".mat" class="hidden">
-          <i class="fa-solid fa-file-waveform text-emerald-400 text-3xl mb-3"></i>
-          <p class="text-sm font-medium text-slate-200">Normal.mat 파일 업로드</p>
-          <p class="text-xs text-slate-500 mt-1">클릭하거나 파일을 드래그하여 놓으세요</p>
+          <i class="fa-solid fa-file-waveform text-emerald-500 text-3xl mb-3"></i>
+          <p id="label-normal" class="text-sm font-medium text-slate-700">Normal.mat 파일 업로드</p>
+          <p class="text-xs text-slate-400 mt-1">클릭하거나 파일을 드래그하여 놓으세요</p>
         </div>
-        <div id="info-normal" class="mt-3 text-xs text-slate-400 font-mono flex flex-col gap-1 hidden">
-          <div><span class="text-slate-500">변수명:</span> <span id="var-normal" class="text-emerald-300"></span></div>
-          <div><span class="text-slate-500">데이터 수:</span> <span id="len-normal" class="text-white"></span> 개 샘플</div>
+        <div id="info-normal" class="mt-3 text-xs text-slate-600 font-mono flex flex-col gap-1 hidden">
+          <div><span class="text-slate-400">변수명:</span> <span id="var-normal" class="text-emerald-600 font-semibold"></span></div>
+          <div><span class="text-slate-400">데이터 수:</span> <span id="len-normal" class="text-slate-800 font-semibold"></span> 개 샘플</div>
         </div>
       </div>
 
       <!-- 이상 데이터 업로드 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:border-rose-500/30 transition-all shadow-md group relative overflow-hidden">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 hover:border-rose-400 transition-all shadow-sm group relative overflow-hidden">
         <div class="absolute top-0 left-0 w-1.5 h-full bg-rose-500"></div>
         <div class="flex justify-between items-start mb-4">
           <div class="space-y-1">
-            <span class="text-xs font-semibold uppercase tracking-wider text-rose-400">Class 2</span>
-            <h3 class="text-base font-bold text-white flex items-center gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-rose-600">Class 2</span>
+            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
               이상 데이터 (B.mat)
             </h3>
           </div>
-          <div id="status-anomaly" class="text-xs px-2 py-1 rounded bg-slate-800 text-slate-400 font-mono">
+          <div id="status-anomaly" class="text-xs px-2 py-1 rounded bg-slate-100 text-slate-500 font-mono">
             파일 대기 중
           </div>
         </div>
         
         <!-- 드래그 드롭 존 -->
-        <div class="border-2 border-dashed border-slate-800 group-hover:border-slate-700 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-800/20 transition relative" onclick="document.getElementById('input-anomaly').click()">
+        <div id="dropzone-anomaly" class="border-2 border-dashed border-slate-200 group-hover:border-slate-300 rounded-xl p-6 text-center cursor-pointer hover:bg-slate-50/50 transition relative" onclick="document.getElementById('input-anomaly').click()">
           <input type="file" id="input-anomaly" accept=".mat" class="hidden">
-          <i class="fa-solid fa-circle-exclamation text-rose-400 text-3xl mb-3"></i>
-          <p class="text-sm font-medium text-slate-200">B.mat 파일 업로드</p>
-          <p class="text-xs text-slate-500 mt-1">클릭하거나 파일을 드래그하여 놓으세요</p>
+          <i class="fa-solid fa-circle-exclamation text-rose-500 text-3xl mb-3"></i>
+          <p id="label-anomaly" class="text-sm font-medium text-slate-700">B.mat 파일 업로드</p>
+          <p class="text-xs text-slate-400 mt-1">클릭하거나 파일을 드래그하여 놓으세요</p>
         </div>
-        <div id="info-anomaly" class="mt-3 text-xs text-slate-400 font-mono flex flex-col gap-1 hidden">
-          <div><span class="text-slate-500">변수명:</span> <span id="var-anomaly" class="text-rose-300"></span></div>
-          <div><span class="text-slate-500">데이터 수:</span> <span id="len-anomaly" class="text-white"></span> 개 샘플</div>
+        <div id="info-anomaly" class="mt-3 text-xs text-slate-600 font-mono flex flex-col gap-1 hidden">
+          <div><span class="text-slate-400">변수명:</span> <span id="var-anomaly" class="text-rose-600 font-semibold"></span></div>
+          <div><span class="text-slate-400">데이터 수:</span> <span id="len-anomaly" class="text-slate-800 font-semibold"></span> 개 샘플</div>
         </div>
       </div>
 
@@ -146,93 +146,93 @@
       
       <!-- 상단 요약 특징값(KPI) 그리드 -->
       <div>
-        <h3 class="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
-          <i class="fa-solid fa-calculator text-indigo-400"></i> 시계열 대표 특징 통계 (Feature Summary)
+        <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-calculator text-indigo-500"></i> 시계열 대표 특징 통계 (Feature Summary)
         </h3>
         <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
           
           <!-- 실효값 (RMS) -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <span class="text-xs text-slate-400 font-medium">실효값 (RMS)</span>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+            <span class="text-xs text-slate-500 font-medium">실효값 (RMS)</span>
             <div class="mt-2 space-y-1">
-              <div class="text-sm font-semibold text-emerald-400 flex items-center justify-between">
-                <span>N:</span> <span id="kpi-rms-normal">-</span>
+              <div class="text-sm font-semibold text-emerald-600 flex items-center justify-between">
+                <span>N:</span> <span id="kpi-rms-normal" class="font-mono">-</span>
               </div>
-              <div class="text-sm font-semibold text-rose-400 flex items-center justify-between">
-                <span>A:</span> <span id="kpi-rms-anomaly">-</span>
+              <div class="text-sm font-semibold text-rose-600 flex items-center justify-between">
+                <span>A:</span> <span id="kpi-rms-anomaly" class="font-mono">-</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-500 mt-2">전체 진동 에너지 수준</span>
+            <span class="text-[10px] text-slate-400 mt-2">전체 진동 에너지 수준</span>
           </div>
 
           <!-- 최대 진폭 (Peak-to-Peak) -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <span class="text-xs text-slate-400 font-medium">최대-최소 폭 (P2P)</span>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+            <span class="text-xs text-slate-500 font-medium">최대-최소 폭 (P2P)</span>
             <div class="mt-2 space-y-1">
-              <div class="text-sm font-semibold text-emerald-400 flex items-center justify-between">
-                <span>N:</span> <span id="kpi-p2p-normal">-</span>
+              <div class="text-sm font-semibold text-emerald-600 flex items-center justify-between">
+                <span>N:</span> <span id="kpi-p2p-normal" class="font-mono">-</span>
               </div>
-              <div class="text-sm font-semibold text-rose-400 flex items-center justify-between">
-                <span>A:</span> <span id="kpi-p2p-anomaly">-</span>
+              <div class="text-sm font-semibold text-rose-600 flex items-center justify-between">
+                <span>A:</span> <span id="kpi-p2p-anomaly" class="font-mono">-</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-500 mt-2">최대 충격 정도</span>
+            <span class="text-[10px] text-slate-400 mt-2">최대 충격 정도</span>
           </div>
 
           <!-- 첨도 (Kurtosis) -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <span class="text-xs text-slate-400 font-medium">첨도 (Kurtosis)</span>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+            <span class="text-xs text-slate-500 font-medium">첨도 (Kurtosis)</span>
             <div class="mt-2 space-y-1">
-              <div class="text-sm font-semibold text-emerald-400 flex items-center justify-between">
-                <span>N:</span> <span id="kpi-kurt-normal">-</span>
+              <div class="text-sm font-semibold text-emerald-600 flex items-center justify-between">
+                <span>N:</span> <span id="kpi-kurt-normal" class="font-mono">-</span>
               </div>
-              <div class="text-sm font-semibold text-rose-400 flex items-center justify-between">
-                <span>A:</span> <span id="kpi-kurt-anomaly">-</span>
+              <div class="text-sm font-semibold text-rose-600 flex items-center justify-between">
+                <span>A:</span> <span id="kpi-kurt-anomaly" class="font-mono">-</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-500 mt-2">충격성 신호 유무 (정상 ~3)</span>
+            <span class="text-[10px] text-slate-400 mt-2">충격성 신호 유무 (정상 ~3)</span>
           </div>
 
           <!-- 평균값 (Mean) -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <span class="text-xs text-slate-400 font-medium">평균값 (Mean)</span>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+            <span class="text-xs text-slate-500 font-medium">평균값 (Mean)</span>
             <div class="mt-2 space-y-1">
-              <div class="text-sm font-semibold text-emerald-400 flex items-center justify-between">
-                <span>N:</span> <span id="kpi-mean-normal">-</span>
+              <div class="text-sm font-semibold text-emerald-600 flex items-center justify-between">
+                <span>N:</span> <span id="kpi-mean-normal" class="font-mono">-</span>
               </div>
-              <div class="text-sm font-semibold text-rose-400 flex items-center justify-between">
-                <span>A:</span> <span id="kpi-mean-anomaly">-</span>
+              <div class="text-sm font-semibold text-rose-600 flex items-center justify-between">
+                <span>A:</span> <span id="kpi-mean-anomaly" class="font-mono">-</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-500 mt-2">센서 오프셋/편향 정도</span>
+            <span class="text-[10px] text-slate-400 mt-2">센서 오프셋/편향 정도</span>
           </div>
 
           <!-- 표준편차 (Std Dev) -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <span class="text-xs text-slate-400 font-medium">표준편차 (Std Dev)</span>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+            <span class="text-xs text-slate-500 font-medium">표준편차 (Std Dev)</span>
             <div class="mt-2 space-y-1">
-              <div class="text-sm font-semibold text-emerald-400 flex items-center justify-between">
-                <span>N:</span> <span id="kpi-std-normal">-</span>
+              <div class="text-sm font-semibold text-emerald-600 flex items-center justify-between">
+                <span>N:</span> <span id="kpi-std-normal" class="font-mono">-</span>
               </div>
-              <div class="text-sm font-semibold text-rose-400 flex items-center justify-between">
-                <span>A:</span> <span id="kpi-std-anomaly">-</span>
+              <div class="text-sm font-semibold text-rose-600 flex items-center justify-between">
+                <span>A:</span> <span id="kpi-std-anomaly" class="font-mono">-</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-500 mt-2">신호의 분산/변동폭</span>
+            <span class="text-[10px] text-slate-400 mt-2">신호의 분산/변동폭</span>
           </div>
 
           <!-- 크레스트 팩터 (Crest Factor) -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
-            <span class="text-xs text-slate-400 font-medium">크레스트 팩터 (CF)</span>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+            <span class="text-xs text-slate-500 font-medium">크레스트 팩터 (CF)</span>
             <div class="mt-2 space-y-1">
-              <div class="text-sm font-semibold text-emerald-400 flex items-center justify-between">
-                <span>N:</span> <span id="kpi-cf-normal">-</span>
+              <div class="text-sm font-semibold text-emerald-600 flex items-center justify-between">
+                <span>N:</span> <span id="kpi-cf-normal" class="font-mono">-</span>
               </div>
-              <div class="text-sm font-semibold text-rose-400 flex items-center justify-between">
-                <span>A:</span> <span id="kpi-cf-anomaly">-</span>
+              <div class="text-sm font-semibold text-rose-600 flex items-center justify-between">
+                <span>A:</span> <span id="kpi-cf-anomaly" class="font-mono">-</span>
               </div>
             </div>
-            <span class="text-[10px] text-slate-500 mt-2">피크치 대 실효치 비율</span>
+            <span class="text-[10px] text-slate-400 mt-2">피크치 대 실효치 비율</span>
           </div>
 
         </div>
@@ -242,17 +242,17 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         <!-- 시간 영역 신호 그래프 (좌측 2열 차지) -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 lg:col-span-2 space-y-4">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 lg:col-span-2 space-y-4 shadow-sm">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <h4 class="text-base font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-wave-square text-indigo-400"></i> 시간 영역 파형 비교 (Time-domain Waveform)
+              <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+                <i class="fa-solid fa-wave-square text-indigo-500"></i> 시간 영역 파형 비교 (Time-domain Waveform)
               </h4>
-              <p class="text-xs text-slate-400">전체 시계열 진폭 상태 비교</p>
+              <p class="text-xs text-slate-500">전체 시계열 진폭 상태 비교</p>
             </div>
             <div class="flex items-center gap-2">
-              <span class="text-xs text-slate-400">표시 샘플 구간:</span>
-              <select id="select-sample-size" class="bg-slate-800 border border-slate-700 text-xs text-white rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+              <span class="text-xs text-slate-500">표시 샘플 구간:</span>
+              <select id="select-sample-size" class="bg-slate-50 border border-slate-200 text-xs text-slate-800 rounded px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
                 <option value="500">최초 500 샘플</option>
                 <option value="1000" selected>최초 1000 샘플</option>
                 <option value="2000">최초 2000 샘플</option>
@@ -260,23 +260,23 @@
               </select>
             </div>
           </div>
-          <div class="h-[320px] w-full bg-slate-950/40 rounded-xl p-2 border border-slate-800/80">
+          <div class="h-[320px] w-full bg-slate-50 rounded-xl p-2 border border-slate-100">
             <canvas id="timeDomainChart"></canvas>
           </div>
         </div>
 
         <!-- 6차원 특징량 레이더 분석 차트 (우측 1열 차지) -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-sm">
           <div>
-            <h4 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-circle-notch text-indigo-400"></i> 다차원 패턴 레이더 분석
+            <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-circle-notch text-indigo-500"></i> 다차원 패턴 레이더 분석
             </h4>
-            <p class="text-xs text-slate-400">정규화된 통계 특징 벡터 비교</p>
+            <p class="text-xs text-slate-500">정규화된 통계 특징 벡터 비교</p>
           </div>
           <div class="h-[280px] w-full flex items-center justify-center">
             <canvas id="radarChart"></canvas>
           </div>
-          <p class="text-[11px] text-slate-500 text-center">
+          <p class="text-[11px] text-slate-400 text-center">
             각 통계 지표는 정상 신호 기준 비율로 상대 정규화 처리되었습니다.
           </p>
         </div>
@@ -284,20 +284,20 @@
       </div>
 
       <!-- 주파수 영역 (FFT) 분석 그래프 -->
-      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
           <div>
-            <h4 class="text-base font-bold text-white flex items-center gap-2">
-              <i class="fa-solid fa-bolt text-amber-400"></i> 고속 푸리에 변환 주파수 스펙트럼 (FFT Spectrum)
+            <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i class="fa-solid fa-bolt text-amber-500"></i> 고속 푸리에 변환 주파수 스펙트럼 (FFT Spectrum)
             </h4>
-            <p class="text-xs text-slate-400">진동 신호 주파수 성분 분석 (이상 진동수 유무 파악)</p>
+            <p class="text-xs text-slate-500">진동 신호 주파수 성분 분석 (이상 진동수 유무 파악)</p>
           </div>
-          <div class="flex items-center gap-2 text-xs text-slate-400">
-            <i class="fa-solid fa-circle text-[8px] text-emerald-400"></i> 정상 피크 vs
-            <i class="fa-solid fa-circle text-[8px] text-rose-400"></i> 이상 결함 주파수 비교
+          <div class="flex items-center gap-2 text-xs text-slate-500">
+            <i class="fa-solid fa-circle text-[8px] text-emerald-500"></i> 정상 피크 vs
+            <i class="fa-solid fa-circle text-[8px] text-rose-500"></i> 이상 결함 주파수 비교
           </div>
         </div>
-        <div class="h-[300px] w-full bg-slate-950/40 rounded-xl p-2 border border-slate-800/80">
+        <div class="h-[300px] w-full bg-slate-50 rounded-xl p-2 border border-slate-100">
           <canvas id="fftChart"></canvas>
         </div>
       </div>
@@ -306,18 +306,18 @@
 
   </main>
 
-  <footer class="border-t border-slate-800/60 bg-slate-950/40 py-5 text-center text-xs text-slate-500">
+  <footer class="border-t border-slate-200 bg-white py-5 text-center text-xs text-slate-500">
     <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-2">
       <p>© 2026 Interactive MAT Feature Analyzer. All Rights Reserved.</p>
       <p class="flex items-center gap-3">
-        <span class="hover:text-slate-300 transition cursor-pointer"><i class="fa-solid fa-heart text-rose-500"></i> Reactivity & Smooth Transition</span>
+        <span class="hover:text-slate-700 transition cursor-pointer"><i class="fa-solid fa-heart text-rose-500"></i> Reactivity & Smooth Transition</span>
       </p>
     </div>
   </footer>
 
   <!-- 알림/토스트 메시지 박스 -->
   <div id="toast-box" class="fixed bottom-5 right-5 z-50 transform translate-y-10 opacity-0 pointer-events-none transition-all duration-300">
-    <div class="bg-slate-900 border border-indigo-500 text-indigo-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
+    <div class="bg-white border border-slate-200 text-slate-700 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3">
       <i id="toast-icon" class="fa-solid fa-info-circle text-lg"></i>
       <span id="toast-message" class="text-xs font-medium">안내 문구</span>
     </div>
@@ -345,14 +345,14 @@
       toastMsg.innerText = message;
       
       if(type === 'success') {
-        toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
-        toastBox.firstElementChild.className = "bg-slate-900 border border-emerald-500 text-emerald-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3";
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-500 text-lg";
+        toastBox.firstElementChild.className = "bg-white border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3";
       } else if(type === 'error') {
-        toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400 text-lg";
-        toastBox.firstElementChild.className = "bg-slate-900 border border-rose-500 text-rose-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3";
+        toastIcon.className = "fa-solid fa-circle-exclamation text-rose-500 text-lg";
+        toastBox.firstElementChild.className = "bg-white border border-rose-200 text-rose-700 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3";
       } else {
-        toastIcon.className = "fa-solid fa-circle-info text-indigo-400 text-lg";
-        toastBox.firstElementChild.className = "bg-slate-900 border border-indigo-500 text-indigo-300 px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3";
+        toastIcon.className = "fa-solid fa-circle-info text-indigo-500 text-lg";
+        toastBox.firstElementChild.className = "bg-white border border-indigo-200 text-indigo-700 px-4 py-3 rounded-xl shadow-xl flex items-center gap-3";
       }
 
       toastBox.classList.remove('translate-y-10', 'opacity-0', 'pointer-events-none');
@@ -416,14 +416,11 @@
       };
     };
 
-    // 주파수 도메인 변환을 위한 수치 Fourier 변환 (Cooley-Tukey FFT 혹은 데이터 사이즈 조절 후 DFT 계산)
-    // 브라우저 성능 최적화를 위해 입력의 512, 1024 포인트를 추출해 고성능 실시간 DFT/FFT 수행
+    // 주파수 도메인 변환을 위한 수치 Fourier 변환
     function computeFFT(signal, sampleRate = 12000) {
-      // 2의 거듭제곱으로 자르기 (FFT 속도 확보)
       const N = 512; 
       const truncated = signal.slice(0, N);
       
-      // Real & Imaginary parts
       let re = new Float64Array(N);
       let im = new Float64Array(N);
       
@@ -432,7 +429,6 @@
         im[i] = 0;
       }
       
-      // Cooley-Tukey FFT 알고리즘 (In-place)
       function bitReverse(n, bits) {
         let r = 0;
         for (let i = 0; i < bits; i++) {
@@ -462,7 +458,6 @@
           for (let j = 0; j < half; j++) {
             const u_re = re[i + j];
             const u_im = im[i + j];
-            // w * t
             const t_re = re[i + j + half] * w_re - im[i + j + half] * w_im;
             const t_im = re[i + j + half] * w_im + im[i + j + half] * w_re;
             
@@ -471,7 +466,6 @@
             re[i + j + half] = u_re - t_re;
             im[i + j + half] = u_im - t_im;
             
-            // next w
             const next_w_re = w_re * wlen_re - w_im * wlen_im;
             w_im = w_re * wlen_im + w_im * wlen_re;
             w_re = next_w_re;
@@ -479,13 +473,12 @@
         }
       }
       
-      // Magnitude 계산 (대칭이므로 절반만 추출)
       const halfN = N / 2;
       const magnitudes = new Float64Array(halfN);
       const frequencies = new Float64Array(halfN);
       
       for(let i = 0; i < halfN; i++) {
-        magnitudes[i] = Math.sqrt(re[i]*re[i] + im[i]*im[i]) / N * 2; // 스케일 조정
+        magnitudes[i] = Math.sqrt(re[i]*re[i] + im[i]*im[i]) / N * 2;
         frequencies[i] = (i * sampleRate) / N;
       }
       
@@ -493,11 +486,9 @@
     }
 
     // 간단한 MATLAB .mat 버전 5 파일 분석 파서 구현
-    // 복잡한 압축 데이터나 계층 구조를 최소한의 코드 바이트로 핵심 플롯 배열 추출하도록 작성
     function parseMatBinary(arrayBuffer) {
       const view = new DataView(arrayBuffer);
       
-      // 1. 헤더 체크 (MATLAB v5 헤더는 최초 124바이트 텍스트 기술 영역이 있음)
       if (arrayBuffer.byteLength < 128) {
         throw new Error("파일 크기가 너무 작습니다. 정상적인 .mat 파일이 아닙니다.");
       }
@@ -508,9 +499,7 @@
         throw new Error("지정된 MATLAB 5.0 형식 파일이 아니거나 형식이 올바르지 않습니다.");
       }
 
-      // 변수명 및 수치 배열 찾기
-      // MAT v5에서는 여러 개의 태그 쌍(데이터타입, 바이트수)으로 필드가 구성됨
-      let offset = 128; // 헤더 다음 오프셋부터 탐색 시작
+      let offset = 128;
       let detectedData = null;
       let detectedVarName = "Unknown";
 
@@ -520,12 +509,10 @@
         const type = view.getUint32(offset, true);
         const bytes = view.getUint32(offset + 4, true);
         
-        // MAT 포맷의 miMATRIX (데이터 유형 14)를 집중 타깃팅
         if (type === 14) {
           const matrixEnd = offset + 8 + bytes;
           let subOffset = offset + 8;
           
-          // 내부 하위 엘리먼트 순회하면서 차원 정보, 변수 이름 및 데이터 자체를 식별
           let arrayName = "unknown";
           let dataArray = null;
           
@@ -534,7 +521,6 @@
             const subType = view.getUint32(subOffset, true);
             let subBytes = view.getUint32(subOffset + 4, true);
             
-            // 압축 태그(Compressed tag) 처리: 상위 16비트에 크기가 들어있는 소형 태그
             const isCompressed = (subType & 0xFFFF0000) !== 0;
             const actualType = isCompressed ? (subType & 0xFFFF) : subType;
             const actualBytes = isCompressed ? ((subType >> 16) & 0xFFFF) : subBytes;
@@ -542,7 +528,6 @@
 
             if (subOffset + tagLength + actualBytes > arrayBuffer.byteLength) break;
 
-            // miINT8 (1) 또는 miINT16 등에서 변수 이름(miINT8) 탐색
             if (actualType === 1 && actualBytes > 0 && actualBytes < 64) {
               const nameBytes = new Uint8Array(arrayBuffer, subOffset + tagLength, actualBytes);
               const possibleName = textDecoder.decode(nameBytes).replace(/\0/g, '').trim();
@@ -551,7 +536,6 @@
               }
             }
             
-            // miDOUBLE(9) 또는 miSINGLE(7) 수치 시계열 데이터 배열 파싱
             if ((actualType === 9 || actualType === 7) && actualBytes > 100) {
               const elementSize = (actualType === 9) ? 8 : 4;
               const elementCount = actualBytes / elementSize;
@@ -570,7 +554,6 @@
               dataArray = tempArr;
             }
             
-            // 오프셋 다음으로 이동 (8바이트 패딩 정렬 적용)
             const padding = isCompressed ? 0 : ((8 - (actualBytes % 8)) % 8);
             subOffset += tagLength + actualBytes + padding;
           }
@@ -578,17 +561,15 @@
           if (dataArray && dataArray.length > 100) {
             detectedData = dataArray;
             detectedVarName = arrayName;
-            break; // 분석 가독성을 위해 가장 긴 대표 지표 배열 1개 즉시 획득
+            break;
           }
         }
         
-        // 8바이트 정렬
         const padding = (8 - (bytes % 8)) % 8;
         offset += 8 + bytes + padding;
       }
       
       if (!detectedData) {
-        // Fallback: 파싱 실패 시 상위 스트림을 double 배열로 간주하고 무작위 추출 시도
         throw new Error("MAT 파일 내부에서 유효한 수치 시간 신호 배열(miDOUBLE/miSINGLE)을 감지하지 못했습니다.");
       }
       
@@ -602,19 +583,15 @@
     function generateDemoData(isAnomaly = false) {
       const length = 12000;
       const data = new Float64Array(length);
-      const fs = 12000; // Sample rate
+      const fs = 12000;
       
-      // 정상 신호: 사인파 2개 조합 + 약한 백색잡음
-      // 이상 신호: 임팩트 펄스 주기적 신호(베어링 결함 등) + 큰 불규칙한 노이즈 + 고주파 성분
       for (let i = 0; i < length; i++) {
         const t = i / fs;
         if (!isAnomaly) {
-          // Normal: 베이스 컴포넌트 60Hz + 150Hz
           data[i] = 1.2 * Math.sin(2 * Math.PI * 60 * t) + 
                     0.6 * Math.sin(2 * Math.PI * 150 * t) + 
                     (Math.random() - 0.5) * 0.4;
         } else {
-          // Anomaly: 60Hz 메인 진폭 변화 + 주기적 충격성 신호 (20Hz 주기)
           const impact = Math.exp(-((i % 600) / 100)) * Math.sin(2 * Math.PI * 320 * t) * 6;
           data[i] = 1.0 * Math.sin(2 * Math.PI * 60 * t) + 
                     impact + 
@@ -631,9 +608,16 @@
       const infoEl = document.getElementById(type === 'normal' ? 'info-normal' : 'info-anomaly');
       const varEl = document.getElementById(type === 'normal' ? 'var-normal' : 'var-anomaly');
       const lenEl = document.getElementById(type === 'normal' ? 'len-normal' : 'len-anomaly');
+      const labelEl = document.getElementById(type === 'normal' ? 'label-normal' : 'label-anomaly');
 
       statusEl.innerText = "분석 중...";
-      statusEl.className = "text-xs px-2 py-1 rounded bg-amber-500/10 text-amber-400 font-mono";
+      statusEl.className = "text-xs px-2 py-1 rounded bg-amber-50 text-amber-600 font-mono font-medium border border-amber-200";
+
+      // 업로드한 실제 파일 명을 대시보드 폼 라벨에 실시간 바인딩
+      if (labelEl) {
+        labelEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i>${file.name}`;
+        labelEl.className = "text-sm font-semibold text-slate-800";
+      }
 
       reader.onload = function(e) {
         try {
@@ -652,7 +636,7 @@
           }
 
           statusEl.innerText = "분석 완료";
-          statusEl.className = "text-xs px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-mono";
+          statusEl.className = "text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-mono font-medium border border-emerald-200";
           infoEl.classList.remove('hidden');
           showToast(`${file.name} 분석 성공!`, "success");
 
@@ -660,14 +644,20 @@
         } catch (err) {
           console.error(err);
           statusEl.innerText = "분석 실패";
-          statusEl.className = "text-xs px-2 py-1 rounded bg-rose-500/10 text-rose-400 font-mono";
+          statusEl.className = "text-xs px-2 py-1 rounded bg-rose-50 text-rose-600 font-mono font-medium border border-rose-200";
           showToast(`${file.name}: ${err.message}`, "error");
+          
+          // 오류 발생 시 원래 텍스트로 환원
+          if (labelEl) {
+            labelEl.innerText = type === 'normal' ? "Normal.mat 파일 업로드" : "B.mat 파일 업로드";
+            labelEl.className = "text-sm font-medium text-slate-700";
+          }
         }
       };
 
       reader.onerror = function() {
         statusEl.innerText = "로딩 에러";
-        statusEl.className = "text-xs px-2 py-1 rounded bg-rose-500/10 text-rose-400 font-mono";
+        statusEl.className = "text-xs px-2 py-1 rounded bg-rose-50 text-rose-600 font-mono font-medium border border-rose-200";
         showToast("파일 로딩 중 에러가 발생했습니다.", "error");
       };
 
@@ -686,11 +676,9 @@
 
     // 시각화 업데이트 전체 로직
     function updateVisualizations() {
-      // 1. 통계 연산 수행
       const statsNormal = calcStats(normalData);
       const statsAnomaly = calcStats(anomalyData);
 
-      // KPI 카드 데이터 바인딩
       document.getElementById('kpi-rms-normal').innerText = statsNormal.rms;
       document.getElementById('kpi-rms-anomaly').innerText = statsAnomaly.rms;
       
@@ -709,14 +697,9 @@
       document.getElementById('kpi-cf-normal').innerText = statsNormal.cf;
       document.getElementById('kpi-cf-anomaly').innerText = statsAnomaly.cf;
 
-      // 2. 시간 도메인 차트 렌더링
       const sampleSize = parseInt(document.getElementById('select-sample-size').value) || 1000;
       renderTimeDomainChart(sampleSize);
-
-      // 3. 레이더 차트 렌더링
       renderRadarChart(statsNormal, statsAnomaly);
-
-      // 4. 주파수 도메인 (FFT) 차트 렌더링
       renderFFTChart();
     }
 
@@ -724,10 +707,8 @@
     function renderTimeDomainChart(limit) {
       const ctx = document.getElementById('timeDomainChart').getContext('2d');
       
-      // 제한 크기에 맞춰 서브슬라이스 데이터 추출
       const slicedNormal = normalData.slice(0, limit);
       const slicedAnomaly = anomalyData.slice(0, limit);
-      
       const labels = Array.from({length: limit}, (_, i) => i);
 
       if (timeChartInstance) {
@@ -770,31 +751,29 @@
           },
           plugins: {
             legend: {
-              labels: { color: '#94a3b8', font: { size: 11 } }
+              labels: { color: '#334155', font: { size: 11, weight: '500' } }
             }
           },
           scales: {
             x: {
-              grid: { color: 'rgba(51, 65, 85, 0.3)' },
-              ticks: { color: '#64748b', maxTicksLimit: 12, font: { size: 10 } },
-              title: { display: true, text: '샘플 인덱스 (n)', color: '#64748b', font: { size: 10 } }
+              grid: { color: 'rgba(226, 232, 240, 0.8)' },
+              ticks: { color: '#475569', maxTicksLimit: 12, font: { size: 10 } },
+              title: { display: true, text: '샘플 인덱스 (n)', color: '#475569', font: { size: 10, weight: '500' } }
             },
             y: {
-              grid: { color: 'rgba(51, 65, 85, 0.3)' },
-              ticks: { color: '#64748b', font: { size: 10 } },
-              title: { display: true, text: '진폭 (Amplitude)', color: '#64748b', font: { size: 10 } }
+              grid: { color: 'rgba(226, 232, 240, 0.8)' },
+              ticks: { color: '#475569', font: { size: 10 } },
+              title: { display: true, text: '진폭 (Amplitude)', color: '#475569', font: { size: 10, weight: '500' } }
             }
           }
         }
       });
     }
 
-    // 레이더 차트 그리기 (정상 기준 비율 정규화 적용)
+    // 레이더 차트 그리기
     function renderRadarChart(n, a) {
       const ctx = document.getElementById('radarChart').getContext('2d');
 
-      // 정상 신호를 기준(=1.0)으로 두었을 때 이상치 상대 비율 계산
-      // 정규화하여 균형있는 차트 레이아웃 구성
       const normN = [1, 1, 1, 1, 1];
       const normA = [
         n.rms > 0 ? (a.rms / n.rms) : 1,
@@ -816,7 +795,7 @@
             {
               label: '정상 데이터 (기준)',
               data: normN,
-              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
               borderColor: 'rgba(16, 185, 129, 0.8)',
               borderWidth: 2,
               pointBackgroundColor: 'rgba(16, 185, 129, 1)'
@@ -824,7 +803,7 @@
             {
               label: '이상 데이터 (배율)',
               data: normA,
-              backgroundColor: 'rgba(244, 63, 94, 0.15)',
+              backgroundColor: 'rgba(244, 63, 94, 0.1)',
               borderColor: 'rgba(244, 63, 94, 0.8)',
               borderWidth: 2,
               pointBackgroundColor: 'rgba(244, 63, 94, 1)'
@@ -836,16 +815,16 @@
           maintainAspectRatio: false,
           plugins: {
             legend: {
-              labels: { color: '#94a3b8', font: { size: 11 } }
+              labels: { color: '#334155', font: { size: 11, weight: '500' } }
             }
           },
           scales: {
             r: {
-              angleLines: { color: 'rgba(51, 65, 85, 0.5)' },
-              grid: { color: 'rgba(51, 65, 85, 0.4)' },
-              pointLabels: { color: '#94a3b8', font: { size: 10, weight: 'bold' } },
+              angleLines: { color: 'rgba(226, 232, 240, 0.9)' },
+              grid: { color: 'rgba(226, 232, 240, 0.9)' },
+              pointLabels: { color: '#475569', font: { size: 10, weight: 'bold' } },
               ticks: {
-                display: false // 단순 상대 비교이므로 틱 숫자 숨김
+                display: false
               }
             }
           }
@@ -872,8 +851,8 @@
             {
               label: `정상 주파수 스펙트럼`,
               data: fftNormal.mags,
-              borderColor: 'rgba(52, 211, 153, 0.85)',
-              backgroundColor: 'rgba(52, 211, 153, 0.05)',
+              borderColor: 'rgba(16, 185, 129, 0.85)',
+              backgroundColor: 'rgba(16, 185, 129, 0.05)',
               borderWidth: 1.5,
               pointRadius: 0,
               fill: true,
@@ -882,8 +861,8 @@
             {
               label: `이상 주파수 스펙트럼`,
               data: fftAnomaly.mags,
-              borderColor: 'rgba(251, 113, 133, 0.85)',
-              backgroundColor: 'rgba(251, 113, 133, 0.05)',
+              borderColor: 'rgba(244, 63, 94, 0.85)',
+              backgroundColor: 'rgba(244, 63, 94, 0.05)',
               borderWidth: 1.5,
               pointRadius: 0,
               fill: true,
@@ -900,19 +879,19 @@
           },
           plugins: {
             legend: {
-              labels: { color: '#94a3b8', font: { size: 11 } }
+              labels: { color: '#334155', font: { size: 11, weight: '500' } }
             }
           },
           scales: {
             x: {
-              grid: { color: 'rgba(51, 65, 85, 0.2)' },
-              ticks: { color: '#64748b', maxTicksLimit: 15, font: { size: 10 } },
-              title: { display: true, text: '주파수 (Frequency, Hz)', color: '#64748b', font: { size: 10 } }
+              grid: { color: 'rgba(226, 232, 240, 0.6)' },
+              ticks: { color: '#475569', maxTicksLimit: 15, font: { size: 10 } },
+              title: { display: true, text: '주파수 (Frequency, Hz)', color: '#475569', font: { size: 10, weight: '500' } }
             },
             y: {
-              grid: { color: 'rgba(51, 65, 85, 0.2)' },
-              ticks: { color: '#64748b', font: { size: 10 } },
-              title: { display: true, text: '가속도/신호 강도 (Magnitude)', color: '#64748b', font: { size: 10 } }
+              grid: { color: 'rgba(226, 232, 240, 0.6)' },
+              ticks: { color: '#475569', font: { size: 10 } },
+              title: { display: true, text: '가속도/신호 강도 (Magnitude)', color: '#475569', font: { size: 10, weight: '500' } }
             }
           }
         }
@@ -927,18 +906,22 @@
       normalName = "Demo_Normal_60Hz";
       anomalyName = "Demo_Fault_Bearing_320Hz";
 
-      // UI 갱신
+      // 데모 파일 상태 갱신
       document.getElementById('status-normal').innerText = "데모 로드 완료";
-      document.getElementById('status-normal').className = "text-xs px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-mono";
+      document.getElementById('status-normal').className = "text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-mono border border-emerald-200 font-medium";
       document.getElementById('info-normal').classList.remove('hidden');
       document.getElementById('var-normal').innerText = normalName;
       document.getElementById('len-normal').innerText = normalData.length.toLocaleString();
+      document.getElementById('label-normal').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-1.5"></i>Demo_Normal.mat (가상)`;
+      document.getElementById('label-normal').className = "text-sm font-semibold text-slate-800";
 
       document.getElementById('status-anomaly').innerText = "데모 로드 완료";
-      document.getElementById('status-anomaly').className = "text-xs px-2 py-1 rounded bg-emerald-500/10 text-emerald-400 font-mono";
+      document.getElementById('status-anomaly').className = "text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-mono border border-emerald-200 font-medium";
       document.getElementById('info-anomaly').classList.remove('hidden');
       document.getElementById('var-anomaly').innerText = anomalyName;
       document.getElementById('len-anomaly').innerText = anomalyData.length.toLocaleString();
+      document.getElementById('label-anomaly').innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-indigo-500 mr-1.5"></i>Demo_Anomaly.mat (가상)`;
+      document.getElementById('label-anomaly').className = "text-sm font-semibold text-slate-800";
 
       showToast("데모 신호 생성 완료 (정상: 60Hz 사인파, 이상: 320Hz 임팩트 신호)", "success");
       checkAndRenderDashboard();
@@ -954,6 +937,7 @@
     // 파일 드래그앤드롭 및 업로드 설정
     const setupFileUpload = (inputId, type) => {
       const inputEl = document.getElementById(inputId);
+      const dropZone = document.getElementById(type === 'normal' ? 'dropzone-normal' : 'dropzone-anomaly');
       
       inputEl.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -962,23 +946,32 @@
         }
       });
 
-      // 드래그 엔 드롭 바인딩
-      const dropZone = inputEl.parentElement;
+      // 드래그 엔 드롭 바인딩 고도화
       dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.classList.add('border-indigo-500', 'bg-slate-800/40');
+        dropZone.classList.remove('border-slate-200');
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-50/20');
       });
 
       dropZone.addEventListener('dragleave', () => {
-        dropZone.classList.remove('border-indigo-500', 'bg-slate-800/40');
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+        dropZone.classList.add('border-slate-200');
       });
 
       dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
-        dropZone.classList.remove('border-indigo-500', 'bg-slate-800/40');
-        const file = e.dataTransfer.files[0];
-        if (file) {
-          handleFileSelected(file, type);
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+        dropZone.classList.add('border-slate-200');
+        
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          const file = files[0];
+          // .mat 확장자 검사 후 분석 처리 트리거
+          if (file.name.toLowerCase().endsWith('.mat')) {
+            handleFileSelected(file, type);
+          } else {
+            showToast("MATLAB 파일(.mat) 형식만 업로드 가능합니다.", "error");
+          }
         }
       });
     };
