@@ -1,9 +1,9 @@
 import streamlit as st
-import scipy.io
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
-from scipy.stats import kurtosis
+import struct
+import zlib
 
 # 1. 페이지 초기 설정 및 라이트 테마 친화적 스타일 적용
 st.set_page_config(
@@ -53,7 +53,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. 통계 피처 추출 함수 정의
+# 2. 순수 NumPy 기반 통계 피처 추출 함수 정의 (scipy 의존성 제거)
 def extract_features(signal):
     if signal is None or len(signal) == 0:
         return {"mean": 0, "rms": 0, "std": 0, "p2p": 0, "kurt": 3.0, "cf": 0}
@@ -63,8 +63,13 @@ def extract_features(signal):
     std_val = np.std(signal)
     p2p_val = np.max(signal) - np.min(signal)
     
-    # scipy kurtosis는 기본적으로 Fisher 공식(정상 분포=0)을 사용하므로, Pearson 공식(정상 분포=3)으로 보정
-    kurt_val = kurtosis(signal, fisher=False)
+    # 첨도(Kurtosis) 수동 연산 (Pearson 정의: 정규분포 = 3.0)
+    variance = np.var(signal)
+    if variance > 0:
+        m4 = np.mean((signal - mean_val) ** 4)
+        kurt_val = m4 / (variance ** 2)
+    else:
+        kurt_val = 3.0
     
     max_abs = np.max(np.abs(signal))
     cf_val = max_abs / rms_val if rms_val > 0 else 0
@@ -86,43 +91,122 @@ def compute_fft(signal, fs=12000, n_fft=512):
     freqs = np.fft.fftfreq(n_fft, 1 / fs)[:n_fft // 2]
     return freqs, mags
 
-# 4. MATLAB .mat 바이너리 파서 정의
-def parse_mat_file(uploaded_file):
+# 4. 순수 파이썬 기반 MATLAB .mat v5 파일 바이너리 고성능 파서 (scipy.io 대체)
+def parse_mat_file_pure_python(uploaded_file):
     try:
-        # 파일 포인터를 처음으로 되돌려 완벽한 데이터를 읽어오도록 방어 코딩 추가
         uploaded_file.seek(0)
-        # scipy.io.loadmat를 사용하여 압축/비압축 매트랩 파일을 통합 파싱
-        mat_data = scipy.io.loadmat(uploaded_file)
-        # 메타데이터를 제외한 실제 데이터 키 필터링
-        keys = [k for k in mat_data.keys() if not k.startswith('__')]
-        if not keys:
-            return None, None
+        data = uploaded_file.read()
         
-        # 가장 긴 길이를 가진 수치 배열 검색
-        best_key = keys[0]
-        max_len = 0
-        for k in keys:
-            data_item = mat_data[k]
-            if isinstance(data_item, np.ndarray):
-                flat_len = data_item.size
-                if flat_len > max_len:
-                    max_len = flat_len
-                    best_key = k
+        if len(data) < 128:
+            return None, None
+            
+        header_text = data[0:116].decode('utf-8', errors='ignore')
+        if "MATLAB 5.0" not in header_text:
+            return None, None
+            
+        # 엔디안 인디케이터 판별 (126-127 바이트)
+        endian_indicator = data[126:128]
+        is_le = (endian_indicator == b'IM')
+        
+        # 내부 구조 재귀 파싱 도우미
+        def parse_elements(buf, start_offset, end_offset):
+            offset = start_offset
+            endian_char = '<' if is_le else '>'
+            
+            while offset < end_offset:
+                if offset + 8 > end_offset:
+                    break
+                
+                tag_type, tag_bytes = struct.unpack_from(f'{endian_char}II', buf, offset)
+                
+                # Small Data Element (SDE) 식별
+                is_sde = (tag_type >> 16) != 0
+                if is_sde:
+                    actual_type = tag_type & 0xFFFF
+                    actual_bytes = (tag_type >> 16) & 0xFFFF
+                    tag_len = 4
+                else:
+                    actual_type = tag_type
+                    actual_bytes = tag_bytes
+                    tag_len = 8
                     
-        extracted_data = mat_data[best_key].flatten().astype(float)
-        return best_key, extracted_data
+                if offset + tag_len + actual_bytes > end_offset:
+                    break
+                
+                # miCOMPRESSED (Type 15) -> zlib 압축 해제 후 하위 레이어 재귀 파싱
+                if actual_type == 15:
+                    compressed_data = buf[offset + tag_len : offset + tag_len + actual_bytes]
+                    try:
+                        decompressed = zlib.decompress(compressed_data)
+                        res = parse_elements(decompressed, 0, len(decompressed))
+                        if res is not None:
+                            return res
+                    except:
+                        pass
+                
+                # miMATRIX (Type 14) -> 배열 정보 및 수치 벡터 추출
+                elif actual_type == 14:
+                    matrix_data = buf[offset + tag_len : offset + tag_len + actual_bytes]
+                    sub_offset = 0
+                    array_name = "unknown"
+                    numerical_data = None
+                    
+                    while sub_offset < len(matrix_data):
+                        if sub_offset + 8 > len(matrix_data):
+                            break
+                        sub_tag_type, sub_tag_bytes = struct.unpack_from(f'{endian_char}II', matrix_data, sub_offset)
+                        
+                        sub_is_sde = (sub_tag_type >> 16) != 0
+                        if sub_is_sde:
+                            sub_act_type = sub_tag_type & 0xFFFF
+                            sub_act_bytes = (sub_tag_type >> 16) & 0xFFFF
+                            sub_tag_len = 4
+                        else:
+                            sub_act_type = sub_tag_type
+                            sub_act_bytes = sub_tag_bytes
+                            sub_tag_len = 8
+                            
+                        if sub_offset + sub_tag_len + sub_act_bytes > len(matrix_data):
+                            break
+                            
+                        val_bytes = matrix_data[sub_offset + sub_tag_len : sub_offset + sub_tag_len + sub_act_bytes]
+                        
+                        # miINT8 (1) -> 변수명 추출
+                        if sub_act_type == 1 and 0 < sub_act_bytes < 64:
+                            try:
+                                possible_name = val_bytes.decode('utf-8', errors='ignore').strip('\x00').strip()
+                                if possible_name.isidentifier():
+                                    array_name = possible_name
+                            except:
+                                pass
+                        
+                        # miDOUBLE (9) / miSINGLE (7) -> 대량 부동 소수점 수치 어레이 복원
+                        elif sub_act_type in (7, 9) and sub_act_bytes > 100:
+                            dtype = np.float64 if sub_act_type == 9 else np.float32
+                            np_dtype = dtype if is_le else dtype.newbyteorder('>')
+                            numerical_data = np.frombuffer(val_bytes, dtype=np_dtype).copy()
+                            
+                        sub_padding = 0 if sub_is_sde else ((8 - (sub_act_bytes % 8)) % 8)
+                        sub_offset += sub_tag_len + sub_act_bytes + sub_padding
+                        
+                    if numerical_data is not None and len(numerical_data) > 100:
+                        return array_name, numerical_data
+                
+                padding = 0 if is_sde else ((8 - (actual_bytes % 8)) % 8)
+                offset += tag_len + actual_bytes + padding
+            return None, None
+            
+        return parse_elements(data, 128, len(data))
     except Exception as e:
-        st.error(f"MAT 파일 해석 실패: {str(e)}")
+        st.error(f"MAT 파일 파싱 에러: {str(e)}")
         return None, None
 
 # 5. 데모 데이터 생성 핸들러
 def generate_demo_data(is_anomaly=False, fs=12000, length=12000):
     t = np.arange(length) / fs
     if not is_anomaly:
-        # 정상 신호: 60Hz + 150Hz 성분 및 낮은 백색잡음
         signal = 1.2 * np.sin(2 * np.pi * 60 * t) + 0.6 * np.sin(2 * np.pi * 150 * t) + np.random.normal(0, 0.2, length)
     else:
-        # 이상 신호: 주기적 충격 성분(320Hz 임팩트) 및 높은 불규칙 노이즈
         impact = np.exp(-((np.arange(length) % 600) / 100)) * np.sin(2 * np.pi * 320 * t) * 6.0
         signal = 1.0 * np.sin(2 * np.pi * 60 * t) + impact + np.random.normal(0, 0.9, length)
     return signal
@@ -178,22 +262,18 @@ with demo_col:
 up_col1, up_col2 = st.columns(2)
 
 with up_col1:
-    # 빈 공간(Placeholder) 확보하여 파일명 동적 변환 위치 지정
     header_normal_placeholder = st.empty()
     file_normal = st.file_uploader("Normal.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_normal")
     
-    # 정상 데이터 업로드 상태 실시간 갱신 처리
     if file_normal is not None:
-        file_normal.seek(0)
         if st.session_state.get("last_processed_normal") != file_normal.name:
-            var_name, data_arr = parse_mat_file(file_normal)
+            var_name, data_arr = parse_mat_file_pure_python(file_normal)
             if data_arr is not None:
                 st.session_state["normal_data"] = data_arr
                 st.session_state["normal_filename"] = file_normal.name
                 st.session_state["normal_var"] = var_name
                 st.session_state["last_processed_normal"] = file_normal.name
     else:
-        # 파일이 제거되었고 가상 데모 상태가 아닐 때 롤백
         last_normal = st.session_state.get("last_processed_normal")
         if last_normal is not None and not last_normal.startswith("Demo_"):
             st.session_state["normal_data"] = None
@@ -201,29 +281,24 @@ with up_col1:
             st.session_state["normal_var"] = "N/A"
             st.session_state["last_processed_normal"] = None
             
-    # 예약 공간에 동적으로 정상 파일 상태 기록
     header_normal_placeholder.markdown(f"#### Class 1: 정상 데이터 (<span style='color:#10b981;'>{st.session_state['normal_filename']}</span>)", unsafe_allow_html=True)
     
     if st.session_state["normal_data"] is not None:
         st.info(f"✔️ {st.session_state['normal_filename']} 로드 완료 (변수명: {st.session_state['normal_var']}, 크기: {len(st.session_state['normal_data']):,}샘플)")
 
 with up_col2:
-    # 빈 공간(Placeholder) 확보하여 파일명 동적 변환 위치 지정
     header_anomaly_placeholder = st.empty()
     file_anomaly = st.file_uploader("B.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_anomaly")
     
-    # 이상 데이터 업로드 상태 실시간 갱신 처리
     if file_anomaly is not None:
-        file_anomaly.seek(0)
         if st.session_state.get("last_processed_anomaly") != file_anomaly.name:
-            var_name, data_arr = parse_mat_file(file_anomaly)
+            var_name, data_arr = parse_mat_file_pure_python(file_anomaly)
             if data_arr is not None:
                 st.session_state["anomaly_data"] = data_arr
                 st.session_state["anomaly_filename"] = file_anomaly.name
                 st.session_state["anomaly_var"] = var_name
                 st.session_state["last_processed_anomaly"] = file_anomaly.name
     else:
-        # 파일이 제거되었고 가상 데모 상태가 아닐 때 롤백
         last_anomaly = st.session_state.get("last_processed_anomaly")
         if last_anomaly is not None and not last_anomaly.startswith("Demo_"):
             st.session_state["anomaly_data"] = None
@@ -231,25 +306,22 @@ with up_col2:
             st.session_state["anomaly_var"] = "N/A"
             st.session_state["last_processed_anomaly"] = None
 
-    # 예약 공간에 동적으로 이상 파일 상태 기록 (드래그 드롭 즉시 갱신 보장)
     header_anomaly_placeholder.markdown(f"#### Class 2: 이상 데이터 (<span style='color:#f43f5e;'>{st.session_state['anomaly_filename']}</span>)", unsafe_allow_html=True)
     
     if st.session_state["anomaly_data"] is not None:
         st.info(f"✔️ {st.session_state['anomaly_filename']} 로드 완료 (변수명: {st.session_state['anomaly_var']}, 크기: {len(st.session_state['anomaly_data']):,}샘플)")
 
-# 9. 분석 수행 및 대시보드 시각화 (두 데이터가 모두 준비되었을 때 노출)
+# 9. 분석 수행 및 대시보드 시각화
 if st.session_state["normal_data"] is not None and st.session_state["anomaly_data"] is not None:
     
     n_data = st.session_state["normal_data"]
     a_data = st.session_state["anomaly_data"]
     
-    # 특징 통계치 계산
     feat_n = extract_features(n_data)
     feat_a = extract_features(a_data)
     
     st.markdown("### <i class='fa-solid fa-calculator' style='color:#4f46e5;'></i> 시계열 대표 특징 통계 (Feature Summary)", unsafe_allow_html=True)
     
-    # 1x6 KPI 컬럼 생성
     kpi_cols = st.columns(6)
     
     kpis = [
@@ -276,9 +348,8 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
                 </div>
             """, unsafe_allow_html=True)
             
-    st.write("") # 간격 조정
+    st.write("")
     
-    # 10. 메인 차트 그리드 레이아웃 (시간 영역 + 레이더 패턴)
     chart_col1, chart_col2 = st.columns([2, 1])
     
     with chart_col1:
@@ -289,7 +360,6 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
         sliced_n = n_data[:sample_limit]
         sliced_a = a_data[:sample_limit]
         
-        # Plotly를 이용한 부드러운 반응형 라인 차트 생성
         fig_time = go.Figure()
         fig_time.add_trace(go.Scatter(
             y=sliced_n, name=f"정상 ({st.session_state['normal_filename']})",
@@ -315,7 +385,6 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
         st.markdown("#### <i class='fa-solid fa-circle-notch' style='color:#4f46e5;'></i> 다차원 패턴 레이더 분석", unsafe_allow_html=True)
         st.markdown("<p style='font-size:0.75rem; color:#94a3b8; margin-top:-5px;'>각 통계 지표는 정상 신호 기준 비율로 상대 정규화</p>", unsafe_allow_html=True)
         
-        # 레이더 정규화 작업
         radar_categories = ['실효치(RMS)', '피크폭(P2P)', '첨도(Kurt)', '표준편차(Std)', '크레스트팩터(CF)']
         norm_n = [1.0] * 5
         norm_a = [
@@ -348,7 +417,6 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
         )
         st.plotly_chart(fig_radar, use_container_width=True)
 
-    # 11. 주파수 영역 (FFT) 분석 그래프 영역
     st.markdown("#### <i class='fa-solid fa-bolt' style='color:#eab308;'></i> 고속 푸리에 변환 주파수 스펙트럼 (FFT Spectrum)", unsafe_allow_html=True)
     
     freqs_n, mags_n = compute_fft(n_data)
@@ -376,11 +444,9 @@ if st.session_state["normal_data"] is not None and st.session_state["anomaly_dat
     st.plotly_chart(fig_fft, use_container_width=True)
 
 else:
-    # 데이터가 로드되지 않았을 때 디폴트 레이아웃 가이드 제시
     st.markdown("---")
     st.info("💡 분석할 정상 데이터와 이상 데이터 파일을 업로드하거나, 우측 상단의 '데모 데이터로 즉시 테스트' 버튼을 클릭하면 대시보드 전체 시각화 및 피처 분석이 부드럽게 펼쳐집니다.")
     
-    # 로딩 이전 디폴트 카드 뼈대 노출 (UX 유지용)
     kpi_cols = st.columns(6)
     for title, _, desc in kpis:
         with kpi_cols[0]:
