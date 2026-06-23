@@ -10,6 +10,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Pako (zlib 압축 해제를 위한 초경량 고성능 라이브러리) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     body {
@@ -89,7 +91,7 @@
         <div class="flex justify-between items-start mb-4">
           <div class="space-y-1">
             <span class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Class 1</span>
-            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <h3 id="title-normal" class="text-base font-bold text-slate-900 flex items-center gap-2">
               정상 데이터 (Normal.mat)
             </h3>
           </div>
@@ -117,7 +119,7 @@
         <div class="flex justify-between items-start mb-4">
           <div class="space-y-1">
             <span class="text-xs font-semibold uppercase tracking-wider text-rose-600">Class 2</span>
-            <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+            <h3 id="title-anomaly" class="text-base font-bold text-slate-900 flex items-center gap-2">
               이상 데이터 (B.mat)
             </h3>
           </div>
@@ -271,7 +273,7 @@
             <h4 class="text-base font-bold text-slate-900 flex items-center gap-2">
               <i class="fa-solid fa-circle-notch text-indigo-500"></i> 다차원 패턴 레이더 분석
             </h4>
-            <p class="text-xs text-slate-500">정규화된 통계 특징 벡터 비교</p>
+            <p class="text-xs text-slate-400">정규화된 통계 특징 벡터 비교</p>
           </div>
           <div class="h-[280px] w-full flex items-center justify-center">
             <canvas id="radarChart"></canvas>
@@ -485,98 +487,116 @@
       return { freqs: Array.from(frequencies), mags: Array.from(magnitudes) };
     }
 
-    // 간단한 MATLAB .mat 버전 5 파일 분석 파서 구현
+    // MATLAB .mat 수치 데이터 구조 분석 파서 (Zlib 압축 지원 및 엔디안 검출 지원)
     function parseMatBinary(arrayBuffer) {
       const view = new DataView(arrayBuffer);
+      const textDecoder = new TextDecoder("utf-8");
       
       if (arrayBuffer.byteLength < 128) {
         throw new Error("파일 크기가 너무 작습니다. 정상적인 .mat 파일이 아닙니다.");
       }
       
-      const textDecoder = new TextDecoder("utf-8");
       const headerText = textDecoder.decode(new Uint8Array(arrayBuffer, 0, 116));
       if (!headerText.includes("MATLAB 5.0")) {
-        throw new Error("지정된 MATLAB 5.0 형식 파일이 아니거나 형식이 올바르지 않습니다.");
+        throw new Error("지정된 MATLAB 5.0 형식 파일이 아닙니다.");
       }
 
-      let offset = 128;
-      let detectedData = null;
-      let detectedVarName = "Unknown";
+      // 엔디안 상태 추출 (126~127 바이트 필드)
+      const endianIndicator = view.getUint16(126, false);
+      const isLittleEndian = (endianIndicator === 0x494D); // 'IM' 이면 Little Endian
 
-      while (offset < arrayBuffer.byteLength) {
-        if(offset + 8 > arrayBuffer.byteLength) break;
-        
-        const type = view.getUint32(offset, true);
-        const bytes = view.getUint32(offset + 4, true);
-        
+      // 데이터 엘리먼트 순차적 파싱 함수 (miCOMPRESSED 대응 재귀 호출 지원)
+      return parseDataElements(arrayBuffer, 128, arrayBuffer.byteLength, isLittleEndian);
+    }
+
+    // 데이터 엘리먼트 영역 파싱 코어 루틴
+    function parseDataElements(buffer, startOffset, endOffset, isLittleEndian) {
+      const view = new DataView(buffer);
+      const textDecoder = new TextDecoder("utf-8");
+      let offset = startOffset;
+
+      while (offset < endOffset) {
+        if (offset + 8 > endOffset) break;
+
+        const type = view.getUint32(offset, isLittleEndian);
+        const bytes = view.getUint32(offset + 4, isLittleEndian);
+
+        // 1. miCOMPRESSED (Type 15) 처리 -> zlib 압축 해제 후 재귀 파싱
+        if (type === 15) {
+          try {
+            const compressedSlice = new Uint8Array(buffer, offset + 8, bytes);
+            const decompressed = pako.inflate(compressedSlice); // pako를 사용해 로컬 브라우저에서 인플레트
+            return parseDataElements(decompressed.buffer, 0, decompressed.byteLength, isLittleEndian);
+          } catch (decompErr) {
+            throw new Error("압축된 MATLAB 데이터 영역을 복원하는데 실패했습니다: " + decompErr.message);
+          }
+        }
+
+        // 2. miMATRIX (Type 14) 분석
         if (type === 14) {
           const matrixEnd = offset + 8 + bytes;
           let subOffset = offset + 8;
           
           let arrayName = "unknown";
           let dataArray = null;
-          
+
           while (subOffset < matrixEnd) {
-            if (subOffset + 8 > arrayBuffer.byteLength) break;
-            const subType = view.getUint32(subOffset, true);
-            let subBytes = view.getUint32(subOffset + 4, true);
-            
+            if (subOffset + 8 > matrixEnd) break;
+            const subType = view.getUint32(subOffset, isLittleEndian);
+            const subBytes = view.getUint32(subOffset + 4, isLittleEndian);
+
             const isCompressed = (subType & 0xFFFF0000) !== 0;
             const actualType = isCompressed ? (subType & 0xFFFF) : subType;
             const actualBytes = isCompressed ? ((subType >> 16) & 0xFFFF) : subBytes;
             const tagLength = isCompressed ? 4 : 8;
 
-            if (subOffset + tagLength + actualBytes > arrayBuffer.byteLength) break;
+            if (subOffset + tagLength + actualBytes > matrixEnd) break;
 
+            // miINT8 (1) - 배열의 변수명 정보 획득
             if (actualType === 1 && actualBytes > 0 && actualBytes < 64) {
-              const nameBytes = new Uint8Array(arrayBuffer, subOffset + tagLength, actualBytes);
+              const nameBytes = new Uint8Array(buffer, subOffset + tagLength, actualBytes);
               const possibleName = textDecoder.decode(nameBytes).replace(/\0/g, '').trim();
               if (possibleName.match(/^[A-Za-z0-9_]+$/)) {
                 arrayName = possibleName;
               }
             }
-            
+
+            // miDOUBLE (9) 또는 miSINGLE (7) 데이터 추출
             if ((actualType === 9 || actualType === 7) && actualBytes > 100) {
               const elementSize = (actualType === 9) ? 8 : 4;
               const elementCount = actualBytes / elementSize;
               const dataOffset = subOffset + tagLength;
-              
+
               const tempArr = new Float64Array(elementCount);
               if (actualType === 9) {
                 for (let k = 0; k < elementCount; k++) {
-                  tempArr[k] = view.getFloat64(dataOffset + k * 8, true);
+                  tempArr[k] = view.getFloat64(dataOffset + k * 8, isLittleEndian);
                 }
               } else {
                 for (let k = 0; k < elementCount; k++) {
-                  tempArr[k] = view.getFloat32(dataOffset + k * 4, true);
+                  tempArr[k] = view.getFloat32(dataOffset + k * 4, isLittleEndian);
                 }
               }
               dataArray = tempArr;
             }
-            
+
             const padding = isCompressed ? 0 : ((8 - (actualBytes % 8)) % 8);
             subOffset += tagLength + actualBytes + padding;
           }
-          
+
           if (dataArray && dataArray.length > 100) {
-            detectedData = dataArray;
-            detectedVarName = arrayName;
-            break;
+            return {
+              varName: arrayName,
+              data: dataArray
+            };
           }
         }
-        
+
         const padding = (8 - (bytes % 8)) % 8;
         offset += 8 + bytes + padding;
       }
-      
-      if (!detectedData) {
-        throw new Error("MAT 파일 내부에서 유효한 수치 시간 신호 배열(miDOUBLE/miSINGLE)을 감지하지 못했습니다.");
-      }
-      
-      return {
-        varName: detectedVarName,
-        data: detectedData
-      };
+
+      throw new Error("MAT 파일 내 수치 시계열 신호(miDOUBLE/miSINGLE)를 추출하지 못했습니다.");
     }
 
     // 데모 데이터 생성기 (사용자 파일 업로드 전 체험용)
@@ -609,13 +629,19 @@
       const varEl = document.getElementById(type === 'normal' ? 'var-normal' : 'var-anomaly');
       const lenEl = document.getElementById(type === 'normal' ? 'len-normal' : 'len-anomaly');
       const labelEl = document.getElementById(type === 'normal' ? 'label-normal' : 'label-anomaly');
+      const titleEl = document.getElementById(type === 'normal' ? 'title-normal' : 'title-anomaly');
 
       statusEl.innerText = "분석 중...";
       statusEl.className = "text-xs px-2 py-1 rounded bg-amber-50 text-amber-600 font-mono font-medium border border-amber-200";
 
-      // 업로드한 실제 파일 명을 대시보드 폼 라벨에 실시간 바인딩
+      // 1. 카드 메인 헤더 타이틀을 업로드된 파일명으로 동적 변경
+      if (titleEl) {
+        titleEl.innerText = type === 'normal' ? `정상 데이터 (${file.name})` : `이상 데이터 (${file.name})`;
+      }
+
+      // 2. 드롭존 텍스트 라벨 변경 (로딩 애니메이션 부여)
       if (labelEl) {
-        labelEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i>${file.name}`;
+        labelEl.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-indigo-500 mr-1.5"></i>${file.name}`;
         labelEl.className = "text-sm font-semibold text-slate-800";
       }
 
@@ -638,8 +664,12 @@
           statusEl.innerText = "분석 완료";
           statusEl.className = "text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-mono font-medium border border-emerald-200";
           infoEl.classList.remove('hidden');
+          
+          if (labelEl) {
+            labelEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 mr-1.5"></i>${file.name}`;
+          }
+          
           showToast(`${file.name} 분석 성공!`, "success");
-
           checkAndRenderDashboard();
         } catch (err) {
           console.error(err);
@@ -647,10 +677,13 @@
           statusEl.className = "text-xs px-2 py-1 rounded bg-rose-50 text-rose-600 font-mono font-medium border border-rose-200";
           showToast(`${file.name}: ${err.message}`, "error");
           
-          // 오류 발생 시 원래 텍스트로 환원
+          // 오류 발생 시 원래 텍스트 및 기본 정적 타이틀로 환원
           if (labelEl) {
             labelEl.innerText = type === 'normal' ? "Normal.mat 파일 업로드" : "B.mat 파일 업로드";
             labelEl.className = "text-sm font-medium text-slate-700";
+          }
+          if (titleEl) {
+            titleEl.innerText = type === 'normal' ? "정상 데이터 (Normal.mat)" : "이상 데이터 (B.mat)";
           }
         }
       };
@@ -669,7 +702,6 @@
       if (normalData && anomalyData) {
         const dashboard = document.getElementById('dashboard-content');
         dashboard.classList.remove('opacity-60', 'pointer-events-none');
-        
         updateVisualizations();
       }
     }
@@ -905,6 +937,10 @@
       
       normalName = "Demo_Normal_60Hz";
       anomalyName = "Demo_Fault_Bearing_320Hz";
+
+      // 메인 카드 타이틀 업데이트
+      document.getElementById('title-normal').innerText = "정상 데이터 (Demo_Normal.mat)";
+      document.getElementById('title-anomaly').innerText = "이상 데이터 (Demo_Anomaly.mat)";
 
       // 데모 파일 상태 갱신
       document.getElementById('status-normal').innerText = "데모 로드 완료";
