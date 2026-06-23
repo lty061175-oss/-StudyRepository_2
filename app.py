@@ -94,7 +94,6 @@ def parse_mat_file(uploaded_file):
         # 메타데이터를 제외한 실제 데이터 키 필터링
         keys = [k for k in mat_data.keys() if not k.startswith('__')]
         if not keys:
-            st.error("MAT 파일 내에 유효한 데이터 키가 존재하지 않습니다.")
             return None, None
         
         # 가장 긴 길이를 가진 수치 배열 검색
@@ -126,6 +125,18 @@ def generate_demo_data(is_anomaly=False, fs=12000, length=12000):
         signal = 1.0 * np.sin(2 * np.pi * 60 * t) + impact + np.random.normal(0, 0.9, length)
     return signal
 
+# 세션 상태 및 파일 트래킹 변수 초기화
+if "normal_data" not in st.session_state:
+    st.session_state["normal_data"] = None
+    st.session_state["normal_filename"] = "Normal.mat"
+    st.session_state["normal_var"] = "N/A"
+    st.session_state["last_processed_normal"] = None
+if "anomaly_data" not in st.session_state:
+    st.session_state["anomaly_data"] = None
+    st.session_state["anomaly_filename"] = "B.mat"
+    st.session_state["anomaly_var"] = "N/A"
+    st.session_state["last_processed_anomaly"] = None
+
 # 6. 헤더 영역 구축
 st.markdown("""
     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 5px;">
@@ -154,45 +165,69 @@ with demo_col:
         st.session_state["normal_data"] = generate_demo_data(is_anomaly=False)
         st.session_state["normal_filename"] = "Demo_Normal_60Hz.mat"
         st.session_state["normal_var"] = "Demo_Normal"
+        st.session_state["last_processed_normal"] = "Demo_Normal_60Hz.mat"
         st.session_state["anomaly_data"] = generate_demo_data(is_anomaly=True)
         st.session_state["anomaly_filename"] = "Demo_Fault_Bearing_320Hz.mat"
         st.session_state["anomaly_var"] = "Demo_Anomaly"
+        st.session_state["last_processed_anomaly"] = "Demo_Fault_Bearing_320Hz.mat"
         st.success("데모 데이터가 성공적으로 탑재되었습니다!")
 
-# 세션 상태 초기화
-if "normal_data" not in st.session_state:
-    st.session_state["normal_data"] = None
-    st.session_state["normal_filename"] = "Normal.mat"
-    st.session_state["normal_var"] = "N/A"
-if "anomaly_data" not in st.session_state:
-    st.session_state["anomaly_data"] = None
-    st.session_state["anomaly_filename"] = "B.mat"
-    st.session_state["anomaly_var"] = "N/A"
+# ==========================================
+# [중요] 최상단 선제적 상태 동기화 처리 영역
+# ==========================================
+# 정상 데이터 파일 처리
+file_normal_raw = st.session_state.get("uploader_normal")
+if file_normal_raw is not None:
+    if st.session_state.get("last_processed_normal") != file_normal_raw.name:
+        var_name, data_arr = parse_mat_file(file_normal_raw)
+        if data_arr is not None:
+            st.session_state["normal_data"] = data_arr
+            st.session_state["normal_filename"] = file_normal_raw.name
+            st.session_state["normal_var"] = var_name
+            st.session_state["last_processed_normal"] = file_normal_raw.name
+else:
+    # 파일이 제거되었고 데모 상태도 아니라면 상태를 초기값으로 복원
+    last_normal = st.session_state.get("last_processed_normal")
+    if last_normal is not None and not last_normal.startswith("Demo_"):
+        st.session_state["normal_data"] = None
+        st.session_state["normal_filename"] = "Normal.mat"
+        st.session_state["normal_var"] = "N/A"
+        st.session_state["last_processed_normal"] = None
 
-# 8. 파일 업로더 영역 구축 (실시간 파일명 반영 대응)
+# 이상 데이터 파일 처리
+file_anomaly_raw = st.session_state.get("uploader_anomaly")
+if file_anomaly_raw is not None:
+    if st.session_state.get("last_processed_anomaly") != file_anomaly_raw.name:
+        var_name, data_arr = parse_mat_file(file_anomaly_raw)
+        if data_arr is not None:
+            st.session_state["anomaly_data"] = data_arr
+            st.session_state["anomaly_filename"] = file_anomaly_raw.name
+            st.session_state["anomaly_var"] = var_name
+            st.session_state["last_processed_anomaly"] = file_anomaly_raw.name
+else:
+    # 파일이 제거되었고 데모 상태도 아니라면 상태를 초기값으로 복원
+    last_anomaly = st.session_state.get("last_processed_anomaly")
+    if last_anomaly is not None and not last_anomaly.startswith("Demo_"):
+        st.session_state["anomaly_data"] = None
+        st.session_state["anomaly_filename"] = "B.mat"
+        st.session_state["anomaly_var"] = "N/A"
+        st.session_state["last_processed_anomaly"] = None
+# ==========================================
+
+# 8. 파일 업로더 레이아웃 구성
 up_col1, up_col2 = st.columns(2)
 
 with up_col1:
     st.markdown(f"#### Class 1: 정상 데이터 (<span style='color:#10b981;'>{st.session_state['normal_filename']}</span>)", unsafe_allow_html=True)
-    file_normal = st.file_uploader("Normal.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_normal")
-    if file_normal is not None:
-        var_name, data_arr = parse_mat_file(file_normal)
-        if data_arr is not None:
-            st.session_state["normal_data"] = data_arr
-            st.session_state["normal_filename"] = file_normal.name
-            st.session_state["normal_var"] = var_name
-            st.info(f"✔️ {file_normal.name} 업로드 완료 (변수명: {var_name}, 크기: {len(data_arr):,}샘플)")
+    st.file_uploader("Normal.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_normal")
+    if st.session_state["normal_data"] is not None:
+        st.info(f"✔️ {st.session_state['normal_filename']} 로드 완료 (변수명: {st.session_state['normal_var']}, 크기: {len(st.session_state['normal_data']):,}샘플)")
 
 with up_col2:
     st.markdown(f"#### Class 2: 이상 데이터 (<span style='color:#f43f5e;'>{st.session_state['anomaly_filename']}</span>)", unsafe_allow_html=True)
-    file_anomaly = st.file_uploader("B.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_anomaly")
-    if file_anomaly is not None:
-        var_name, data_arr = parse_mat_file(file_anomaly)
-        if data_arr is not None:
-            st.session_state["anomaly_data"] = data_arr
-            st.session_state["anomaly_filename"] = file_anomaly.name
-            st.session_state["anomaly_var"] = var_name
-            st.info(f"✔️ {file_anomaly.name} 업로드 완료 (변수명: {var_name}, 크기: {len(data_arr):,}샘플)")
+    st.file_uploader("B.mat 파일을 여기에 업로드하세요", type=["mat"], label_visibility="collapsed", key="uploader_anomaly")
+    if st.session_state["anomaly_data"] is not None:
+        st.info(f"✔️ {st.session_state['anomaly_filename']} 로드 완료 (변수명: {st.session_state['anomaly_var']}, 크기: {len(st.session_state['anomaly_data']):,}샘플)")
 
 # 9. 분석 수행 및 대시보드 시각화 (두 데이터가 모두 준비되었을 때 노출)
 if st.session_state["normal_data"] is not None and st.session_state["anomaly_data"] is not None:
